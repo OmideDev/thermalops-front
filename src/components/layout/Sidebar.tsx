@@ -20,7 +20,7 @@ const primaryNav = [
   { to: '/equipment', label: 'Equipment', icon: Wrench, end: false },
   { to: '/operations', label: 'Operations', icon: ClipboardList, soon: true },
   { to: '/energy', label: 'Energy', icon: Zap, soon: true },
-  { to: '/ai', label: 'AI Insights', icon: Brain, soon: true },
+  { to: '/ai', label: 'AI Insights', icon: Brain, end: true },
   { to: '/work-orders', label: 'Work Orders', icon: ClipboardList, soon: true },
   { to: '/analytics', label: 'Analytics', icon: BarChart3, soon: true },
   { to: '/reports', label: 'Reports', icon: FileText, soon: true },

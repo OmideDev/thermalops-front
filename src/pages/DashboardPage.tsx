@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Building2, CalendarDays } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { ActiveUnitPanel } from '../components/dashboard/ActiveUnitPanel'
+import { AiAssistantCard } from '../components/dashboard/AiAssistantCard'
 import { EquipmentHealthCard } from '../components/dashboard/EquipmentHealthCard'
 import { EquipmentStatusCard } from '../components/dashboard/EquipmentStatusCard'
 import { KpiCards } from '../components/dashboard/KpiCards'
@@ -196,6 +197,7 @@ export function DashboardPage() {
             selected ? buildingsById.get(selected.building_id) ?? null : null
           }
         />
+        <AiAssistantCard />
       </aside>
     </div>
   )

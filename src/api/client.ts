@@ -19,6 +19,36 @@ export class ApiError extends Error {
   }
 }
 
+function detailFromBody(body: unknown, fallback: string): string {
+  if (!body || typeof body !== 'object') {
+    return fallback
+  }
+
+  const detail = (body as { detail?: unknown }).detail
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail
+  }
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0] as { msg?: unknown }
+    if (typeof first?.msg === 'string' && first.msg.trim()) {
+      return first.msg
+    }
+  }
+
+  return fallback
+}
+
+async function parseError(response: Response): Promise<ApiError> {
+  const fallback = `Request failed (${response.status})`
+  try {
+    const body: unknown = await response.json()
+    return new ApiError(detailFromBody(body, fallback), response.status)
+  } catch {
+    return new ApiError(fallback, response.status)
+  }
+}
+
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'GET',
@@ -29,16 +59,34 @@ export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> 
   })
 
   if (!response.ok) {
-    let detail = `Request failed (${response.status})`
-    try {
-      const body = (await response.json()) as { detail?: string }
-      if (typeof body.detail === 'string') {
-        detail = body.detail
-      }
-    } catch {
-      // Keep the generic status message when the body is not JSON.
-    }
-    throw new ApiError(detail, response.status)
+    throw await parseError(response)
+  }
+
+  return (await response.json()) as T
+}
+
+/**
+ * JSON POST helper. Does not apply a short client timeout — callers that need
+ * cancellation should pass an AbortSignal (e.g. user cancel). Local assistant
+ * generation may take well over 90 seconds.
+ */
+export async function apiPost<T>(
+  path: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!response.ok) {
+    throw await parseError(response)
   }
 
   return (await response.json()) as T

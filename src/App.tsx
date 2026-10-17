@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
 import { useTheme } from './hooks/useTheme'
+import { AssistantPage } from './pages/AssistantPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { EquipmentDetailPage } from './pages/EquipmentDetailPage'
 import { EquipmentListPage } from './pages/EquipmentListPage'
@@ -15,6 +16,7 @@ export default function App() {
           element={<AppShell theme={theme} onToggleTheme={toggleTheme} />}
         >
           <Route index element={<DashboardPage />} />
+          <Route path="ai" element={<AssistantPage />} />
           <Route path="equipment" element={<EquipmentListPage />} />
           <Route path="equipment/:equipmentId" element={<EquipmentDetailPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
