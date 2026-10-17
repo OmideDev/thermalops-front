@@ -49,7 +49,14 @@ export function useAssistantAsk(): AssistantAskState {
 
   const ask = useCallback((overrideQuestion?: string) => {
     const nextQuestion = (overrideQuestion ?? question).trim()
-    if (!nextQuestion || abortRef.current) {
+    if (!nextQuestion) {
+      return
+    }
+
+    // Block only while a non-aborted request owns the slot. An aborted
+    // controller may still be settling; allow a replacement ask.
+    const active = abortRef.current
+    if (active && !active.signal.aborted) {
       return
     }
 
@@ -65,31 +72,42 @@ export function useAssistantAsk(): AssistantAskState {
     setError(null)
     setResult(null)
 
+    const settleIfOwner = (apply: () => void) => {
+      if (abortRef.current !== controller) {
+        return
+      }
+      apply()
+      if (abortRef.current === controller) {
+        abortRef.current = null
+      }
+    }
+
     askAssistant({ question: nextQuestion }, controller.signal)
       .then((data) => {
-        if (controller.signal.aborted) {
-          return
-        }
-        setResult(data)
-        setLoading(false)
-        abortRef.current = null
+        settleIfOwner(() => {
+          if (controller.signal.aborted) {
+            // Aborted request resolved anyway — clear ownership, skip success.
+            setLoading(false)
+            return
+          }
+          setResult(data)
+          setLoading(false)
+        })
       })
       .catch((err: unknown) => {
-        if (controller.signal.aborted) {
+        settleIfOwner(() => {
           setError(describeAssistantError(err))
           setLoading(false)
-          abortRef.current = null
-          return
-        }
-        setError(describeAssistantError(err))
-        setLoading(false)
-        abortRef.current = null
+        })
       })
   }, [question])
 
   useEffect(() => {
     return () => {
-      abortRef.current?.abort()
+      const controller = abortRef.current
+      // Drop ownership first so an in-flight settlement cannot setState.
+      abortRef.current = null
+      controller?.abort()
     }
   }, [])
 
